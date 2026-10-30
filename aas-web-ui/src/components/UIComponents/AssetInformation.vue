@@ -17,7 +17,7 @@
           </v-expansion-panel-title>
 
           <v-expansion-panel-text class="py-2 bg-detailsCard">
-            <GlobalAssetQrCode :content="assetInfo.id" :margin="3" :scale="4" />
+            <GlobalAssetQrCode :content="qrContent" :margin="3" :scale="4" />
           </v-expansion-panel-text>
         </v-expansion-panel>
       </v-expansion-panels>
@@ -57,6 +57,7 @@
   import { useTechnicalData_v1_2Utils } from '@/composables/AAS/SubmodelTemplates/TechnicalData_v1_2Utils'
   import { useUrlUtils } from '@/composables/UrlUtils'
   import { useAASStore } from '@/store/AASDataStore'
+  import { buildAasDeepLinkUrl } from '@/utils/QrDeepLinkUtils'
 
   // Composables
   const { getProductImageUrlByAasId: getProductImageUrlByAasIdFromSmTechnicalData } = useTechnicalData_v1_2Utils()
@@ -85,6 +86,17 @@
       id: props.assetObject.globalAssetId,
       modelType: 'Asset',
     }
+  })
+
+  // The raw global asset ID (e.g. `urn:p2o:...`) is not a navigatable URL, so the
+  // QR code encodes a deep link that the router resolves via AAS discovery.
+  const qrContent = computed(() => {
+    const globalAssetId = assetInfo.value.id
+    if (!globalAssetId || globalAssetId.trim() === '') {
+      return ''
+    }
+    const deepLink = buildAasDeepLinkUrl(globalAssetId)
+    return deepLink !== '' ? deepLink : globalAssetId
   })
   const selectedAas = computed(() => aasStore.getSelectedAAS)
   const screenHeight = computed(() => {
