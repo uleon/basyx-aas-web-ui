@@ -522,23 +522,39 @@ export function useAASHandling () {
     }
 
     const aas = await fetchAas(aasEndpoint)
+    if (!aas || Object.keys(aas).length === 0) {
+      return failResponse
+    }
     const smId = getSmIdOfSmePath(smePath)
 
-    if (
-      aas
-      && Object.keys(aas).length > 0
-      && aas.submodels
-      && Array.isArray(aas.submodels)
-      && aas.submodels.length > 0
-    ) {
-      const submodelRefs = aas.submodels
-
-      const submodelRef = submodelRefs.find((submodelRef: any) => {
-        const smRefSmId = extractIdFromReference(submodelRef, 'Submodel')
-        return smRefSmId === smId
+    const hasSubmodelRef = (submodelRefs: any): boolean => {
+      if (!Array.isArray(submodelRefs)) {
+        return false
+      }
+      return submodelRefs.some((submodelRef: any) => {
+        return extractIdFromReference(submodelRef, 'Submodel') === smId
       })
+    }
 
-      return (submodelRef && Object.keys(submodelRef).length > 0) || failResponse
+    // Directly owned Submodel (or an SME within it).
+    if (hasSubmodelRef(aas.submodels)) {
+      return true
+    }
+
+    // Inherited Submodel: follow the `derivedFrom` chain (instance -> type ->
+    // ...). Guard against cycles so a malformed reference cannot loop forever.
+    const visited = new Set<string>([aas.id])
+    let derivedAasId = extractIdFromReference(aas.derivedFrom, 'AssetAdministrationShell')
+    while (derivedAasId && !visited.has(derivedAasId)) {
+      visited.add(derivedAasId)
+      const derivedAas = await fetchAasById(derivedAasId)
+      if (!derivedAas || Object.keys(derivedAas).length === 0) {
+        break
+      }
+      if (hasSubmodelRef(derivedAas.submodels)) {
+        return true
+      }
+      derivedAasId = extractIdFromReference(derivedAas.derivedFrom, 'AssetAdministrationShell')
     }
 
     return failResponse
