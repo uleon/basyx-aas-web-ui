@@ -59,7 +59,28 @@
                 :items="submodelList"
               >
                 <template #default="{ item }">
+                  <!-- Section header separating submodels inherited from the AAS
+                       this AAS is derived from (AAS derivedFrom) -->
+                  <div
+                    v-if="item.isSection"
+                    class="derived-from-section d-flex flex-column justify-center pa-2"
+                    style="height: 56px"
+                  >
+                    <div class="d-flex align-center">
+                      <v-icon class="mr-2" color="warning" icon="mdi-compare-horizontal" size="small" />
+
+                      <span class="text-body-2 font-weight-bold text-warning">
+                        Submodels from {{ item.sectionLabel }}
+                      </span>
+                    </div>
+
+                    <div class="text-caption opacity-50">
+                      Inherited from the AAS this AAS is derived from
+                    </div>
+                  </div>
+
                   <v-list-item
+                    v-else
                     :key="item.id"
                     :active="isSelected(item)"
                     base-color="listItem"
@@ -69,9 +90,11 @@
                     :style="{
                       'border-color': isSelected(item)
                         ? primaryColor + ' !important'
-                        : isDark
-                          ? '#686868 !important'
-                          : '#ABABAB !important',
+                        : item.isDerivedFrom
+                          ? derivedColor + ' !important'
+                          : isDark
+                            ? '#686868 !important'
+                            : '#ABABAB !important',
                     }"
                     variant="tonal"
                     @click="selectSM(item)"
@@ -80,7 +103,7 @@
                       <v-chip
                         border
                         class="mr-3"
-                        color="primary"
+                        :color="item.isDerivedFrom ? 'warning' : 'primary'"
                         label
                         size="x-small"
                       >
@@ -234,6 +257,7 @@
   import { useAASStore } from '@/store/AASDataStore'
   import { useInfrastructureStore } from '@/store/InfrastructureStore'
   import { useNavigationStore } from '@/store/NavigationStore'
+  import { extractId } from '@/utils/AAS/ReferenceUtil'
   import { extractVersionRevision } from '@/utils/AAS/SemanticIdUtils'
   import { smts } from '@/utils/AAS/SubmodelTemplateUtils'
 
@@ -247,7 +271,7 @@
   const router = useRouter()
 
   // Composables
-  const { fetchAasSmListById } = useAASHandling()
+  const { fetchAasSmListById, fetchAasById } = useAASHandling()
   const { nameToDisplay, descriptionToDisplay } = useReferableUtils()
 
   // Stores
@@ -273,6 +297,7 @@
   const submodelRegistryURL = computed(() => infrastructureStore.getSubmodelRegistryURL)
   const isMobile = computed(() => navigationStore.getIsMobile)
   const primaryColor = computed(() => theme.current.value.colors.primary)
+  const derivedColor = computed(() => theme.current.value.colors.warning)
 
   // Watchers
   watch(
@@ -337,17 +362,42 @@
       if (!listLoad.isCurrent(generation)) {
         return
       }
-      const submodelsSorted = submodels.toSorted((smA: any, smB: any) => {
-        // Sort SMs with respect to displayed title and version
-        return smTitleToDisplay(smA) + '|' + smVersionToDisplay(smA)
-          > smTitleToDisplay(smB) + '|' + smVersionToDisplay(smB)
-          ? 1
-          : -1
-      })
+      const ownSubmodels = submodels
+        .toSorted((smA: any, smB: any) => sortSubmodels(smA, smB))
+        .map((sm: any) => ({ ...sm, isDerivedFrom: false }))
 
-      submodelList.value = [...submodelsSorted]
+      const submodelListAll: Array<any> = [...ownSubmodels]
 
-      submodelListUnfiltered.value = [...submodelsSorted]
+      // Submodels of the AAS this AAS is derived from (AAS `derivedFrom`).
+      // Rendered in a separate, differently coloured section so the viewer can
+      // also navigate to the parent / type AAS's submodels.
+      const derivedAasId = extractId(selectedAAS.value?.derivedFrom, 'AssetAdministrationShell')
+      if (derivedAasId && derivedAasId !== selectedAAS.value.id) {
+        const [derivedAas, derivedSubmodels] = await Promise.all([
+          fetchAasById(derivedAasId),
+          fetchAasSmListById(derivedAasId),
+        ])
+        if (!listLoad.isCurrent(generation)) {
+          return
+        }
+        const derivedList = derivedSubmodels
+          .toSorted((smA: any, smB: any) => sortSubmodels(smA, smB))
+          .map((sm: any) => ({ ...sm, isDerivedFrom: true }))
+        if (derivedList.length > 0) {
+          const derivedLabel
+            = (derivedAas && Object.keys(derivedAas).length > 0 && nameToDisplay(derivedAas))
+              || derivedAasId
+          submodelListAll.push({
+            id: '__derived_from_section__',
+            isSection: true,
+            sectionLabel: derivedLabel,
+          }, ...derivedList)
+        }
+      }
+
+      submodelList.value = [...submodelListAll]
+
+      submodelListUnfiltered.value = [...submodelListAll]
 
       scrollToSelectedSubmodel()
     } finally {
@@ -355,17 +405,27 @@
     }
   }
 
+  function sortSubmodels (smA: any, smB: any): number {
+    // Sort SMs with respect to displayed title and version
+    return smTitleToDisplay(smA) + '|' + smVersionToDisplay(smA)
+      > smTitleToDisplay(smB) + '|' + smVersionToDisplay(smB)
+      ? 1
+      : -1
+  }
+
   function filterSubmodelList (value: string): void {
     if (!value || value.trim() === '') {
       submodelList.value = submodelListUnfiltered.value
     } else {
-      // Filter list of SMs (cf. AASList.vue)
+      // Filter list of SMs (cf. AASList.vue); drop section headers while searching
       const submodelListFiltered = submodelListUnfiltered.value.filter(
-        (sm: any) =>
-          sm.id.toLowerCase().includes(value.toLowerCase())
-          || sm.idShort.toLowerCase().includes(value.toLowerCase())
-          || nameToDisplay(sm).toLowerCase().includes(value.toLowerCase())
-          || descriptionToDisplay(sm).toLowerCase().includes(value.toLowerCase()),
+        (sm: any) => {
+          if (sm.isSection) return false
+          return sm.id.toLowerCase().includes(value.toLowerCase())
+            || sm.idShort.toLowerCase().includes(value.toLowerCase())
+            || nameToDisplay(sm).toLowerCase().includes(value.toLowerCase())
+            || descriptionToDisplay(sm).toLowerCase().includes(value.toLowerCase())
+        },
       )
       submodelList.value = submodelListFiltered
     }
