@@ -25,6 +25,12 @@ vi.mock('@/store/AASDataStore', () => ({
   }),
 }))
 
+vi.mock('@/store/EnvironmentStore', () => ({
+  useEnvStore: () => ({
+    getEnvBasePath: '/',
+  }),
+}))
+
 describe('AssetInformation.vue QR visibility', () => {
   function mountAssetInformation (globalAssetId: string) {
     return mount(AssetInformation, {
