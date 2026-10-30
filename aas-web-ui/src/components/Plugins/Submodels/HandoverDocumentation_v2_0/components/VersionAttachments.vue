@@ -29,7 +29,7 @@
       <!-- Digital Files-->
       <v-window-item value="digital">
         <template v-if="digitalFiles.length > 0">
-          <v-expansion-panels variant="accordion">
+          <v-expansion-panels v-model="digitalFilePanel" variant="accordion">
             <v-expansion-panel
               v-for="(fileEl, f) in digitalFiles"
               :key="fileEl.id ?? fileEl.path ?? fileEl.idShort ?? `digital-${f}`"
@@ -96,9 +96,23 @@
   // Default to the digital file so the user sees the actual document
   // content without an extra click; the preview tab remains available.
   const fileTab = ref<FileTab>('digital')
+  // Default to opening the first digital file so the user sees the actual
+  // document content without an extra click.
+  const digitalFilePanel = ref<string | null>(null)
   const versionSmc = computed(() => props.versionSmc ?? null)
   const previewFile = computed(() => getPreviewFile(versionSmc.value))
   const digitalFiles = computed(() => getDigitalFiles(versionSmc.value))
+
+  const firstDigitalFileKey = computed(() => {
+    const first = digitalFiles.value[0]
+    return first ? first.id ?? first.path ?? first.idShort ?? 'digital-0' : null
+  })
+
+  watch(digitalFiles, (files) => {
+    if (files.length > 0) {
+      digitalFilePanel.value = firstDigitalFileKey.value
+    }
+  }, { immediate: true })
 
   function onFileTabUpdate (tab: unknown): void {
     fileTab.value = tab === 'digital' ? 'digital' : 'preview'

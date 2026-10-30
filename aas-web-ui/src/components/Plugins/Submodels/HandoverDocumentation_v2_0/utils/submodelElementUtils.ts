@@ -1,4 +1,4 @@
-import type { LangString, SubmodelElementLike } from '../types'
+import type { DocumentLike, LangString, SubmodelElementLike } from '../types'
 
 export function asSubmodelElementArray (value: unknown): SubmodelElementLike[] {
   return Array.isArray(value)
@@ -42,4 +42,35 @@ export function hasAttachments (versionSmc: SubmodelElementLike | null | undefin
 
 export function getDisplayTitleOrFallback (label: string, fallbackPrefix: string, index: number): string {
   return label.trim().length > 0 ? label : `${fallbackPrefix} ${index + 1}`
+}
+
+/**
+ * Returns the preview file of the first document version, if any.
+ * Used to render a thumbnail icon in the document expansion panel title.
+ */
+export function getDocumentPreviewFile (doc: DocumentLike | null | undefined): SubmodelElementLike | null {
+  const versions = doc?.documentVersionInfo
+  if (!Array.isArray(versions) || versions.length === 0) {
+    return null
+  }
+
+  for (const version of versions) {
+    const preview = getPreviewFile(version)
+    if (preview?.value) {
+      return preview
+    }
+  }
+
+  return null
+}
+
+/**
+ * Returns true if the version SMC has metadata children (i.e. children
+ * other than the PreviewFile / DigitalFiles attachments).
+ */
+export function hasMetadata (versionSmc: SubmodelElementLike | null | undefined): boolean {
+  const children = asSubmodelElementArray(versionSmc?.value)
+  return children.some(
+    entry => entry.idShort !== 'PreviewFile' && entry.idShort !== 'DigitalFiles',
+  )
 }

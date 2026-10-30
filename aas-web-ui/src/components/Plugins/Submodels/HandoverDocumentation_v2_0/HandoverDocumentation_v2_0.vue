@@ -12,7 +12,7 @@
           <v-expansion-panel-title>
             <v-list-item class="pa-0">
               <template #prepend>
-                <v-icon size="small">mdi-file-outline</v-icon>
+                <DocumentPreviewIcon :file="getDocumentPreview(document)" />
               </template>
 
               <v-list-item-title>
@@ -57,8 +57,8 @@
                     :value="v"
                   >
                     <div class="pt-4">
-                      <!-- Table for Version Metadata -->
-                      <VersionMetadataTable :version-smc="versionSmc" />
+                      <!-- Collapsible Version Metadata (hidden by default) -->
+                      <MetadataPanel :version-smc="versionSmc" />
 
                       <!-- Tabs for File and Digital Files -->
                       <VersionAttachments :version-smc="versionSmc" />
@@ -100,7 +100,7 @@
   import { useSMHandling } from '@/composables/AAS/SMHandling'
   import { useSME } from '@/composables/AAS/SubmodelElements/SubmodelElement'
   import { getSubmodelElementBySemanticId, getSubmodelElementsBySemanticId } from '@/utils/AAS/SemanticIdUtils'
-  import { getDescriptionArray, getDisplayTitleOrFallback } from './utils/submodelElementUtils'
+  import { getDescriptionArray, getDisplayTitleOrFallback, getDocumentPreviewFile } from './utils/submodelElementUtils'
 
   defineOptions({
     name: 'HandoverDocumentation',
@@ -225,5 +225,10 @@
   function getDocumentTitle (document: DocumentLike, index: number): string {
     const documentName = String(nameToDisplay(document) ?? '')
     return getDisplayTitleOrFallback(documentName, 'Document', index)
+  }
+
+  // Preview file of the first document version, used as the panel thumbnail.
+  function getDocumentPreview (document: DocumentLike): SubmodelElementLike | null {
+    return getDocumentPreviewFile(document)
   }
 </script>
