@@ -143,49 +143,16 @@
           Eclipse BaSyx™ ©
         </v-col>
 
-        <v-col class="d-flex flex-column align-center justify-center pa-0" :cols="isMobile ? 12 : 4">
-          <div
-            v-if="copyrightName || legalNoticeUrl || privacyPolicyUrl"
-            class="footer-company px-3 d-flex flex-column align-center justify-center"
-          >
-            <div v-if="copyrightName" class="footer-company-name font-weight-regular text-no-wrap">
-              {{ new Date().getFullYear() }} — {{ copyrightName }} ©
-            </div>
-
-            <div v-if="legalNoticeUrl || privacyPolicyUrl" class="d-flex align-center">
-              <v-btn
-                v-if="legalNoticeUrl"
-                class="footer-link px-1 text-decoration-underline"
-                color="primary"
-                density="compact"
-                height="16"
-                :href="legalNoticeUrl"
-                rel="noopener"
-                size="x-small"
-                target="_blank"
-                variant="text"
-              >Legal notice</v-btn>
-
-              <v-btn
-                v-if="privacyPolicyUrl"
-                class="footer-link px-1 text-decoration-underline"
-                color="primary"
-                density="compact"
-                height="16"
-                :href="privacyPolicyUrl"
-                rel="noopener"
-                size="x-small"
-                target="_blank"
-                variant="text"
-              >Privacy policy</v-btn>
-            </div>
-          </div>
+        <v-col class="d-flex align-center justify-center pa-0 font-weight-regular" :cols="isMobile ? 12 : 4">
+          <a href="https://www.tu-dresden.de/impressum/" rel="noopener" target="_blank">
+            Impressum
+          </a>
         </v-col>
 
-        <v-col v-if="!isMobile" class="d-flex align-center justify-end pa-0" cols="4">
-          <!-- IDTA Logo -->
-          <a class="ml-2" href="https://industrialdigitaltwin.org/" rel="noopener" target="_blank">
-            <v-img class="cursor-pointer" src="@/assets/IDTA_Logo_Blue_Web_S.svg" width="80px" />
+        <v-col v-if="!isMobile" class="d-flex align-center justify-end pa-0 font-weight-regular" cols="4">
+          <!-- IDTA -->
+          <a class="ml-2" href="https://idta-research-hub.public.kubernetes.htw-dresden.de/" rel="noopener" target="_blank">
+            IDTA Research Hub Semiconductor
           </a>
         </v-col>
       </v-row>
@@ -367,9 +334,6 @@
   const isMobile = computed(() => navigationStore.getIsMobile)
   const isDark = computed(() => theme.global.current.value.dark)
   const endpointConfigAvailable = computed(() => envStore.getEndpointConfigAvailable)
-  const copyrightName = computed(() => getOptionalEnvValue(envStore.getEnvCopyrightName))
-  const legalNoticeUrl = computed(() => getFooterUrl(envStore.getEnvLegalNoticeUrl))
-  const privacyPolicyUrl = computed(() => getFooterUrl(envStore.getEnvPrivacyPolicyUrl))
   const menuToggleTitle = computed(() => {
     if (route.path.startsWith('/modules/')) {
       const parentModuleRoute = route.matched.find(record => record.path.startsWith('/modules/'))
@@ -494,35 +458,11 @@
     }
   }
 
-  function getFooterUrl (value: string): string | undefined {
-    const url = getOptionalEnvValue(value)
-    return url && validURL(url) ? url : undefined
-  }
-
-  function getOptionalEnvValue (value: string): string | undefined {
-    const configuredValue = value.trim()
-    return configuredValue !== '' && !configuredValue.includes('PLACEHOLDER') ? configuredValue : undefined
-  }
-
 </script>
 
 <style scoped>
   .basyx-copyright {
     font-size: 0.625rem;
     line-height: 1rem;
-  }
-
-  .footer-company {
-    min-height: 2.125rem;
-  }
-
-  .footer-company-name,
-  .footer-link {
-    font-size: 0.6875rem;
-    line-height: 0.875rem;
-  }
-
-  .footer-link {
-    text-underline-offset: 0.125rem;
   }
 </style>

@@ -57,11 +57,16 @@
   import { useTechnicalData_v1_2Utils } from '@/composables/AAS/SubmodelTemplates/TechnicalData_v1_2Utils'
   import { useUrlUtils } from '@/composables/UrlUtils'
   import { useAASStore } from '@/store/AASDataStore'
+  import { useEnvStore } from '@/store/EnvironmentStore'
   import { buildAasDeepLinkUrl } from '@/utils/QrDeepLinkUtils'
 
   // Composables
   const { getProductImageUrlByAasId: getProductImageUrlByAasIdFromSmTechnicalData } = useTechnicalData_v1_2Utils()
   const { getBlobUrl } = useUrlUtils()
+
+  // Stores
+  const envStore = useEnvStore()
+  const aasStore = useAASStore()
 
   // Props
   const props = defineProps({
@@ -70,9 +75,6 @@
       default: {} as any,
     },
   })
-
-  // Stores
-  const aasStore = useAASStore()
 
   // Data
   const thumbnailSrc = ref('' as string)
@@ -95,7 +97,8 @@
     if (!globalAssetId || globalAssetId.trim() === '') {
       return ''
     }
-    const deepLink = buildAasDeepLinkUrl(globalAssetId)
+    const basePath = import.meta.env.MODE === 'production' ? envStore.getEnvBasePath : import.meta.env.BASE_URL
+    const deepLink = buildAasDeepLinkUrl(globalAssetId, undefined, basePath)
     if (deepLink === '') {
       return globalAssetId
     }
