@@ -1,5 +1,5 @@
 <template>
-  <v-expansion-panels v-if="hasMetadataChildren" variant="accordion" v-model="openPanel">
+  <v-expansion-panels v-if="hasMetadataChildren" v-model="openPanel" variant="accordion">
     <v-expansion-panel value="metadata">
       <v-expansion-panel-title>
         <v-list-item class="pa-0">

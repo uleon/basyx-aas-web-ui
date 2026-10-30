@@ -108,7 +108,7 @@
     return first ? first.id ?? first.path ?? first.idShort ?? 'digital-0' : null
   })
 
-  watch(digitalFiles, (files) => {
+  watch(digitalFiles, files => {
     if (files.length > 0) {
       digitalFilePanel.value = firstDigitalFileKey.value
     }

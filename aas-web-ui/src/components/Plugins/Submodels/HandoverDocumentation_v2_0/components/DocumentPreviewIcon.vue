@@ -2,10 +2,10 @@
   <span class="d-inline-flex align-center document-preview-icon">
     <img
       v-if="showImage"
-      :src="imageUrl"
       alt=""
       class="document-preview-thumb"
-    />
+      :src="imageUrl"
+    >
 
     <v-icon v-else :icon="fallbackIcon" size="small" />
   </span>
