@@ -25,10 +25,8 @@ function normalizeBasePath (value: string | undefined): string {
  * (or opening the printed URL) navigates straight to the asset.
  *
  * @param globalAssetId - The global asset ID to link to.
- * @param origin - Absolute origin (scheme + host + port). When omitted, the
- *   current origin is used so the link always points back to the running instance.
- * @param basePath - Application base path (e.g. `/` or `/ui/`). When omitted it
- *   defaults to `/`.
+ * @param origin - Absolute origin (scheme + host + port); defaults to the current origin.
+ * @param basePath - Application base path (e.g. `/` or `/ui/`); defaults to `/`.
  * @returns The absolute deep link URL, or an empty string if the ID is blank.
  */
 export function buildAasDeepLinkUrl (
@@ -46,8 +44,8 @@ export function buildAasDeepLinkUrl (
     return ''
   }
 
-  const resolvedOrigin = (origin ?? (typeof window !== 'undefined' ? window.location.origin : ''))
-    .replace(/\/+$/, '')
+  const currentOrigin = typeof window === 'undefined' ? '' : window.location.origin
+  const resolvedOrigin = (origin ?? currentOrigin).replace(/\/+$/, '')
   const base = normalizeBasePath(basePath)
   const route = base === '/' ? `/${AAS_VIEWER_ROUTE}` : `${base}${AAS_VIEWER_ROUTE}`
 

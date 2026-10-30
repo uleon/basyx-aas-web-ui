@@ -96,7 +96,10 @@
       return ''
     }
     const deepLink = buildAasDeepLinkUrl(globalAssetId)
-    return deepLink !== '' ? deepLink : globalAssetId
+    if (deepLink === '') {
+      return globalAssetId
+    }
+    return deepLink
   })
   const selectedAas = computed(() => aasStore.getSelectedAAS)
   const screenHeight = computed(() => {

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import { base64Encode } from '@/utils/EncodeDecodeUtils'
 import { buildAasDeepLinkUrl } from '@/utils/QrDeepLinkUtils'
-import { base64Decode, base64Encode } from '@/utils/EncodeDecodeUtils'
 
 describe('QrDeepLinkUtils.ts; Tests for \'buildAasDeepLinkUrl()\'', () => {
   it('returns an empty string for a blank asset ID', () => {
     expect(buildAasDeepLinkUrl('')).toStrictEqual('')
-    expect(buildAasDeepLinkUrl('   ')).toStrictEqual('')
+    expect(buildAasDeepLinkUrl(' '.repeat(3))).toStrictEqual('')
     expect(buildAasDeepLinkUrl('')).toStrictEqual('')
   })
 
