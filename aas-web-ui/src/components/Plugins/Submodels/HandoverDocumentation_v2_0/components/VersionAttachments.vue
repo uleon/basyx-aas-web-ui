@@ -93,7 +93,9 @@
     versionSmc?: SubmodelElementLike | null
   }>()
 
-  const fileTab = ref<FileTab>('preview')
+  // Default to the digital file so the user sees the actual document
+  // content without an extra click; the preview tab remains available.
+  const fileTab = ref<FileTab>('digital')
   const versionSmc = computed(() => props.versionSmc ?? null)
   const previewFile = computed(() => getPreviewFile(versionSmc.value))
   const digitalFiles = computed(() => getDigitalFiles(versionSmc.value))

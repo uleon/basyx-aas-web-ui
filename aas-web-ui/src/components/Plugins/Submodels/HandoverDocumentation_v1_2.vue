@@ -478,6 +478,11 @@
       })
     }
 
+    // Auto-open the first document so the user sees the file immediately.
+    if (documents.value.length > 0) {
+      panel.value = 0
+    }
+
     isLoading.value = false
   }
 
@@ -510,7 +515,10 @@
         )
       })
 
-      documentVersion.fileToggle = 'preview'
+      // Default to the digital file so the user sees the actual document
+      // content without an extra click; the toggle is still available for
+      // the preview file.
+      documentVersion.fileToggle = 'digital'
     }
   }
 </script>

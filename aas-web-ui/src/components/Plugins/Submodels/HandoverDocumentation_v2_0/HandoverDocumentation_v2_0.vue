@@ -181,6 +181,12 @@
 
       doc.documentIds = documentIdSmcs
     }
+
+    // Auto-open the first document so the user sees the file immediately.
+    if (documents.value.length > 0) {
+      panel.value = 0
+    }
+
     isLoading.value = false
   }
 
