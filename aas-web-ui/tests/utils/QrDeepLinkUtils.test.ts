@@ -1,6 +1,41 @@
 import { describe, expect, it } from 'vitest'
 import { base64Encode } from '@/utils/EncodeDecodeUtils'
-import { buildAasDeepLinkUrl } from '@/utils/QrDeepLinkUtils'
+import { buildAasDeepLinkUrl, extractGlobalAssetIdFromScannedContent } from '@/utils/QrDeepLinkUtils'
+
+describe('QrDeepLinkUtils.ts; Tests for \'extractGlobalAssetIdFromScannedContent()\'', () => {
+  it('returns the trimmed raw global asset ID unchanged', () => {
+    expect(extractGlobalAssetIdFromScannedContent('urn:p2o:module:bb01'))
+      .toStrictEqual('urn:p2o:module:bb01')
+    expect(extractGlobalAssetIdFromScannedContent('  urn:p2o:module:bb01  '))
+      .toStrictEqual('urn:p2o:module:bb01')
+  })
+
+  it('returns an empty string for blank input', () => {
+    expect(extractGlobalAssetIdFromScannedContent('')).toStrictEqual('')
+    expect(extractGlobalAssetIdFromScannedContent(' '.repeat(3))).toStrictEqual('')
+  })
+
+  it('decodes the globalAssetId from a root-base-path deep-link URL', () => {
+    const url = buildAasDeepLinkUrl('urn:p2o:module:bb01', 'https://example.com', '/')
+    expect(extractGlobalAssetIdFromScannedContent(url)).toStrictEqual('urn:p2o:module:bb01')
+  })
+
+  it('decodes the globalAssetId from a non-root-base-path deep-link URL', () => {
+    const url = buildAasDeepLinkUrl('urn:p2o:module:bb01', 'https://example.com', '/aas/basyx-gui/')
+    expect(extractGlobalAssetIdFromScannedContent(url)).toStrictEqual('urn:p2o:module:bb01')
+  })
+
+  it('ignores a URL that has no globalAssetId query parameter', () => {
+    const url = 'https://example.com/aasviewer?aas=some-endpoint'
+    expect(extractGlobalAssetIdFromScannedContent(url)).toStrictEqual(url)
+  })
+
+  it('round-trips through base64Encode for an ID that needs URL encoding', () => {
+    const id = 'urn:p2o:module:bb 01/x'
+    const url = buildAasDeepLinkUrl(id, 'https://example.com', '/')
+    expect(extractGlobalAssetIdFromScannedContent(url)).toStrictEqual(id)
+  })
+})
 
 describe('QrDeepLinkUtils.ts; Tests for \'buildAasDeepLinkUrl()\'', () => {
   it('returns an empty string for a blank asset ID', () => {

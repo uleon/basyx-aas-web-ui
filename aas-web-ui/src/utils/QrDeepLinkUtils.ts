@@ -1,4 +1,4 @@
-import { base64Encode } from '@/utils/EncodeDecodeUtils'
+import { base64Decode, base64Encode } from '@/utils/EncodeDecodeUtils'
 
 const AAS_VIEWER_ROUTE = 'aasviewer'
 
@@ -50,4 +50,44 @@ export function buildAasDeepLinkUrl (
   const route = base === '/' ? `/${AAS_VIEWER_ROUTE}` : `${base}${AAS_VIEWER_ROUTE}`
 
   return `${resolvedOrigin}${route}?globalAssetId=${encodedId}`
+}
+
+/**
+ * Extracts the raw global asset ID from a QR-scanned value that may be either a
+ * raw global asset ID (e.g. `urn:p2o:module:bb01`) or a deep-link URL built by
+ * {@link buildAasDeepLinkUrl} (e.g. `https://host/aasviewer?globalAssetId=...`).
+ *
+ * Deep-link URLs store the ID base64url-encoded in the `globalAssetId` query
+ * parameter. When such a URL is detected, that parameter is decoded back to the
+ * raw ID so the AAS discovery service can resolve it. Any other value (including
+ * non deep-link URLs and raw IDs) is returned trimmed and unchanged.
+ *
+ * @param text - The scanned text, either a raw global asset ID or a deep-link URL.
+ * @returns The raw global asset ID, or the trimmed input if it is not a deep-link URL.
+ */
+export function extractGlobalAssetIdFromScannedContent (text: string): string {
+  const trimmed = (text ?? '').trim()
+  if (trimmed === '') {
+    return ''
+  }
+
+  // Not an http(s) URL -> assume it is already a raw global asset ID.
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return trimmed
+  }
+
+  try {
+    const url = new URL(trimmed)
+    // searchParams.get is case-sensitive, so check both casings explicitly.
+    const paramValue
+      = url.searchParams.get('globalAssetId')
+        ?? url.searchParams.get('globalassetid')
+    if (paramValue === null) {
+      return trimmed
+    }
+    const decoded = base64Decode(paramValue).trim()
+    return decoded === '' ? trimmed : decoded
+  } catch {
+    return trimmed
+  }
 }

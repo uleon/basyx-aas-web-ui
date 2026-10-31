@@ -148,6 +148,7 @@
   import { Html5Qrcode } from 'html5-qrcode'
   import { useAASDiscoveryClient } from '@/composables/Client/AASDiscoveryClient'
   import { useInfrastructureStore } from '@/store/InfrastructureStore'
+  import { extractGlobalAssetIdFromScannedContent } from '@/utils/QrDeepLinkUtils'
 
   interface CameraInfo {
     id: string
@@ -447,12 +448,16 @@
       return
     }
 
+    // The QR may encode either a raw global asset ID or a deep-link URL built by
+    // buildAasDeepLinkUrl. Normalise both to the raw ID before looking it up.
+    const globalAssetId = extractGlobalAssetIdFromScannedContent(decodedText)
+
     try {
-      const aasIds = await getAasIds(decodedText)
+      const aasIds = await getAasIds(globalAssetId)
       dialogModel.value = false
 
       if (aasIds.length === 0) {
-        discoveryError.value = `No AAS found for asset ID: ${decodedText}`
+        discoveryError.value = `No AAS found for asset ID: ${globalAssetId}`
       } else {
         discoveredAasIds.value = aasIds
         selectedAasId.value = aasIds[0]
