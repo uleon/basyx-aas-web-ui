@@ -46,6 +46,84 @@ function getCommitSha (): string {
   }
 }
 
+/**
+ * LOCAL DEV ONLY (revert before Docker build):
+ * Rewriting reverse-proxy for /aas/api/* and /aas/docs/* requests.
+ * Forwards to the upstream backend and rewrites the absolute origin in
+ * JSON responses to empty string, making the app treat all endpoint URLs
+ * as same-origin relative paths (avoids both CORS and the app's trust check).
+ */
+function aasApiProxyPlugin (upstreamUrl: string, localOrigin: string) {
+  const PREFIXES = ['/aas/api/', '/aas/docs/']
+  return {
+    name: 'aas-api-rewrite-proxy',
+    configureServer (server: any) {
+      server.middlewares.use(async (req: any, res: any, next: any) => {
+        const url = req.url || ''
+        if (!PREFIXES.some((p: string) => url.startsWith(p))) return next()
+
+        const upstream = upstreamUrl + url
+        try {
+          const method = req.method || 'GET'
+          let body: Buffer | undefined
+          if (!['GET', 'HEAD'].includes(method)) {
+            const chunks: Buffer[] = []
+            for await (const chunk of req) {
+              chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+            }
+            body = Buffer.concat(chunks)
+          }
+
+          const hdrs: Record<string, string> = {}
+          for (const [k, v] of Object.entries(req.headers)) {
+            if (['host', 'connection', 'accept-encoding'].includes(k.toLowerCase())) continue
+            if (typeof v === 'string') hdrs[k] = v
+            else if (Array.isArray(v)) hdrs[k] = v.join(', ')
+          }
+
+          const upstreamRes = await fetch(upstream, {
+            method,
+            headers: hdrs,
+            body: body && body.length > 0 ? body : undefined,
+            redirect: 'follow',
+          })
+
+          res.statusCode = upstreamRes.status
+          upstreamRes.headers.forEach((value, key) => {
+            if (!['transfer-encoding', 'content-encoding', 'content-length', 'connection'].includes(key.toLowerCase())) {
+              res.setHeader(key, value)
+            }
+          })
+
+          const ct = upstreamRes.headers.get('content-type') || ''
+          if (ct.includes('application/json') || ct.includes('text/')) {
+            const text = await upstreamRes.text()
+            // Rewrite the upstream origin to the LOCAL DEV origin (same-origin),
+            // NOT to an empty string. An empty rewrite turns absolute file
+            // values (e.g. https://aas-demo.../aas/docs/x.pdf) into *relative*
+            // paths (/aas/docs/x.pdf); the app's File.valueUrl() can then not
+            // parse them and falls back to the in-repository /attachment
+            // endpoint, which BaSyx 400s for URL-backed files ("Error
+            // retrieving File!"). Same-origin absolute URLs keep valueUrl() on
+            // its fast path and pass the app's origin trust check.
+            const rewritten = text.split(upstreamUrl).join(localOrigin)
+            res.setHeader('content-length', String(Buffer.byteLength(rewritten)))
+            res.end(rewritten)
+          } else {
+            const buf = Buffer.from(await upstreamRes.arrayBuffer())
+            res.setHeader('content-length', String(buf.byteLength))
+            res.end(buf)
+          }
+        } catch (e: any) {
+          res.statusCode = 502
+          res.setHeader('content-type', 'text/plain')
+          res.end(`Proxy error: ${e.message}`)
+        }
+      })
+    },
+  }
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   process.env = { ...process.env, ...loadEnv(mode, process.cwd()) }
@@ -59,6 +137,14 @@ export default defineConfig(({ mode }) => {
     plugins: [
       // basicSsl(), // Uncomment to enable HTTPS — requires BaSyx infrastructure to also support HTTPS
       copyWebIfcWasmPlugin(),
+      // LOCAL DEV ONLY (revert before Docker build): rewriting proxy to backend.
+      // File/attachment URLs in JSON responses are rewritten from the upstream
+      // origin to the local dev origin (same-origin) so the app fetches them
+      // through this proxy (see aasApiProxyPlugin).
+      aasApiProxyPlugin(
+        process.env.AAS_API_UPSTREAM_URL || 'https://aas-demo.p2o-lab.ifa.et.tu-dresden.de',
+        process.env.AAS_API_LOCAL_ORIGIN || 'http://localhost:3000',
+      ),
       AutoImport({
         imports: [vueAutoImportPreset],
         dts: 'src/auto-imports.d.ts',

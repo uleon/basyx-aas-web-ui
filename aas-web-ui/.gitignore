@@ -3,6 +3,10 @@ node_modules
 /dist
 /dist-bff
 
+# Generated on every `pnpm install` (scripts/postinstall.mjs copies it from
+# node_modules/@thatopen/fragments). Not a real edit — ignore to stop churn.
+/public/worker.mjs
+
 
 # local env files
 .env.local

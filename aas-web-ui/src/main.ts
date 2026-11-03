@@ -87,9 +87,25 @@ async function getVisualizations (app: AppType): Promise<PluginType[]> {
 
   const plugins = [] as Array<PluginType>
 
+  // Viewers whose component name appears in VITE_PLUGINS_BLACKLIST (comma-
+  // separated) are excluded from auto-registration. A blacklisted viewer is
+  // still auto-importable as a plain component, so it can be embedded inside
+  // another plugin (e.g. as a tab) without also rendering on its own. In dev
+  // the value comes from .env.development.local; in production it is injected
+  // at container start by entrypoint.sh (see the PLUGINS_BLACKLIST placeholder).
+  const blacklistRaw = import.meta.env.VITE_PLUGINS_BLACKLIST
+    || (import.meta.env.MODE === 'production' ? '/__PLUGINS_BLACKLIST_PLACEHOLDER__/' : '')
+  const blacklist = new Set(
+    blacklistRaw.split(',').map((name: string) => name.trim()).filter(Boolean),
+  )
+
   for (const path in pluginFileRecords) {
     const pluginName = path.split('/').pop()?.replace('.vue', '') || 'UnnamedPlugin'
     const pluginComponent: any = await pluginFileRecords[path]()
+
+    if (blacklist.has(pluginName)) {
+      continue
+    }
 
     if (pluginComponent.default.semanticId) {
       app.component(
