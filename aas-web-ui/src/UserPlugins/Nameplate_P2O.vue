@@ -18,41 +18,41 @@
     <v-window class="pt-3" :model-value="activeTab">
       <!-- Tab 1: p2o-lab Typenschild card (blue, metal-plate styling) -->
       <v-window-item value="p2o">
-    <div
-      class="pa-6 d-flex flex-column align-center"
-      style="background: linear-gradient(135deg, #00386C 0%, #0a5a9e 55%, #49BAE5 100%); border-radius: 12px;"
-    >
-      <!-- p2o-lab logo (served at <basePath>/Logo/Logo_light.svg via the
+        <div
+          class="pa-6 d-flex flex-column align-center"
+          style="background: linear-gradient(135deg, #00386C 0%, #0a5a9e 55%, #49BAE5 100%); border-radius: 12px;"
+        >
+          <!-- p2o-lab logo (served at <basePath>/Logo/Logo_light.svg via the
            bind mount in etc/webgui/compose.yaml) -->
-      <v-img
-        alt="p2o-lab"
-        class="mb-4"
-        max-width="220"
-        :src="logoSrc"
-        style="filter: brightness(0) invert(1);"
-      />
+          <v-img
+            alt="p2o-lab"
+            class="mb-4"
+            max-width="220"
+            :src="logoSrc"
+            style="filter: brightness(0) invert(1);"
+          />
 
-      <!-- Plate title -->
-      <div class="text-white text-subtitle-1 font-weight-bold mb-4 letter-spacing">
-        TECHNISCHE DATEN &middot; TYPENSCHILD
-      </div>
-
-      <v-row v-for="row in rows" :key="row.label" class="nameplate-row w-100">
-        <v-col class="pr-4" cols="4">
-          <div class="text-caption font-weight-medium nameplate-label text-white">
-            {{ row.label }}
+          <!-- Plate title -->
+          <div class="text-white text-subtitle-1 font-weight-bold mb-4 letter-spacing">
+            TECHNISCHE DATEN &middot; TYPENSCHILD
           </div>
-        </v-col>
 
-        <v-col class="pl-4" cols="8">
-          <div class="nameplate-value">{{ row.value }}</div>
-        </v-col>
-      </v-row>
+          <v-row v-for="row in rows" :key="row.label" class="nameplate-row w-100">
+            <v-col class="pr-4" cols="4">
+              <div class="text-caption font-weight-medium nameplate-label text-white">
+                {{ row.label }}
+              </div>
+            </v-col>
 
-      <div class="text-caption mt-5 letter-spacing text-white">
-        p2o-lab
-      </div>
-    </div>
+            <v-col class="pl-4" cols="8">
+              <div class="nameplate-value">{{ row.value }}</div>
+            </v-col>
+          </v-row>
+
+          <div class="text-caption mt-5 letter-spacing text-white">
+            p2o-lab
+          </div>
+        </div>
       </v-window-item>
 
       <!-- Tab 2: the stock BaSyx Digital Nameplate viewer. It is a plain

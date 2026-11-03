@@ -60,7 +60,9 @@ function aasApiProxyPlugin (upstreamUrl: string, localOrigin: string) {
     configureServer (server: any) {
       server.middlewares.use(async (req: any, res: any, next: any) => {
         const url = req.url || ''
-        if (!PREFIXES.some((p: string) => url.startsWith(p))) return next()
+        if (!PREFIXES.some((p: string) => url.startsWith(p))) {
+          return next()
+        }
 
         const upstream = upstreamUrl + url
         try {
@@ -76,9 +78,14 @@ function aasApiProxyPlugin (upstreamUrl: string, localOrigin: string) {
 
           const hdrs: Record<string, string> = {}
           for (const [k, v] of Object.entries(req.headers)) {
-            if (['host', 'connection', 'accept-encoding'].includes(k.toLowerCase())) continue
-            if (typeof v === 'string') hdrs[k] = v
-            else if (Array.isArray(v)) hdrs[k] = v.join(', ')
+            if (['host', 'connection', 'accept-encoding'].includes(k.toLowerCase())) {
+              continue
+            }
+            if (typeof v === 'string') {
+              hdrs[k] = v
+            } else if (Array.isArray(v)) {
+              hdrs[k] = v.join(', ')
+            }
           }
 
           const upstreamRes = await fetch(upstream, {
@@ -89,11 +96,11 @@ function aasApiProxyPlugin (upstreamUrl: string, localOrigin: string) {
           })
 
           res.statusCode = upstreamRes.status
-          upstreamRes.headers.forEach((value, key) => {
+          for (const [key, value] of upstreamRes.headers.entries()) {
             if (!['transfer-encoding', 'content-encoding', 'content-length', 'connection'].includes(key.toLowerCase())) {
               res.setHeader(key, value)
             }
-          })
+          }
 
           const ct = upstreamRes.headers.get('content-type') || ''
           if (ct.includes('application/json') || ct.includes('text/')) {
@@ -114,10 +121,10 @@ function aasApiProxyPlugin (upstreamUrl: string, localOrigin: string) {
             res.setHeader('content-length', String(buf.byteLength))
             res.end(buf)
           }
-        } catch (e: any) {
+        } catch (error: any) {
           res.statusCode = 502
           res.setHeader('content-type', 'text/plain')
-          res.end(`Proxy error: ${e.message}`)
+          res.end(`Proxy error: ${error.message}`)
         }
       })
     },
